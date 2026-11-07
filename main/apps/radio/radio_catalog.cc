@@ -441,21 +441,32 @@ std::size_t discover_for_location(RadioStation *stations, std::size_t capacity,
                               !std::strcmp(province->chinese, "台湾") ? "TW" : "CN";
         copy_text(location->country_code, sizeof(location->country_code), country);
     }
+    // Reserve room for the compiled-in presets (Shenzhen + CNR). The device
+    // catalog has 14 slots: 4 for the local directory and 10 for presets.
+    // Without this, a city with many stations fills the catalog first and the
+    // presets (added last below) are silently dropped. The host catalog suite
+    // packs an 8-slot catalog with local stations on purpose, so that narrower
+    // case keeps its original packing.
+    constexpr std::size_t kPresetCount = sizeof(kRadioPresets) / sizeof(kRadioPresets[0]);
+    constexpr std::size_t kMinLocalStations = 2;
+    const std::size_t local_capacity = (capacity >= 10)
+        ? std::max(kMinLocalStations, capacity - kPresetCount)
+        : capacity;
     const DirectoryServers servers = directory_servers(stop);
     std::size_t count = 0;
     const char *query = location->search_city[0] ? location->search_city : location->city;
-    query_directory(servers, *location, "name", query, "当地电台 · 网络直播", stations, capacity, count, stop);
-    if (province && count < capacity && !same_name(query, province->chinese)) {
+    query_directory(servers, *location, "name", query, "当地电台 · 网络直播", stations, local_capacity, count, stop);
+    if (province && count < local_capacity && !same_name(query, province->chinese)) {
         // Most Chinese stations put the province in their name, not state metadata.
         query_directory(servers, *location, "name", province->chinese, "省内电台 · 网络直播",
-                        stations, capacity, count, stop);
+                        stations, local_capacity, count, stop);
     }
-    if (province && count < capacity) {
+    if (province && count < local_capacity) {
         query_directory(servers, *location, "state", province->english, "省内电台 · 网络直播",
-                        stations, capacity, count, stop);
-    } else if (location->region[0] && count < capacity) {
+                        stations, local_capacity, count, stop);
+    } else if (location->region[0] && count < local_capacity) {
         query_directory(servers, *location, "state", location->region, "地区电台 · 网络直播",
-                        stations, capacity, count, stop);
+                        stations, local_capacity, count, stop);
     }
     if (cancelled(stop)) return 0;
     for (const auto &preset : kRadioPresets) {

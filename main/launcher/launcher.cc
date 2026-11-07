@@ -183,14 +183,6 @@ void draw_app_icon(passport_app_id_t id, uint32_t color) {
             set_part(5, 38, 4, 12, 6, detail);      // 天线头
             set_part(6, 26, 64, 36, 6, warm);     // 围巾
             break;
-        case APP_ID_MUSE:
-                set_frame(0, 18, 18, 52, 46, color, 4);
-                set_part(1, 29, 31, 6, 12, color);
-                set_part(2, 53, 31, 6, 12, color);
-                set_part(3, 36, 53, 16, 4, color);
-                set_part(4, 6, 34, 8, 20, color);
-                set_part(5, 74, 34, 8, 20, color);
-                break;
         case APP_ID_WIFI:
             // 信号塔:四级阶梯(与其它图标的"方块"语言一致)
             set_part(0, 14, 56, 12, 18, color);

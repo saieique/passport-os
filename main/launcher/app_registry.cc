@@ -38,7 +38,6 @@ extern const passport_app_t g_game_app;
 extern const passport_app_t g_tetris_app;
 extern const passport_app_t g_stopwatch_app;
 extern const passport_app_t g_sound_jump_app;
-extern const passport_app_t g_muse_app;
 extern const passport_app_t g_pomodoro_app;
 
 namespace {
@@ -47,11 +46,11 @@ namespace {
 // 首页(APP_ID_HOME)**不在这里** —— 它是底座而非一张卡,改由
 // app_registry_get_by_id() 单独寻址,这样 switch_to(APP_ID_HOME) 才不会找不到而黑屏。
 // AI设备(AI设备/Codex 陪伴精灵)已于 2026-09-12 移除,见 docs/app-review-2026-09-12.md。
+// Muse 应用已于 2026-11-07 移除;APP_ID_MUSE 作为占位保留,避免后续 id 数值漂移。
 const passport_app_t *s_apps[] = {
     &g_radio_app,
     &g_voice_app,
     &g_xiaozhi_app,
-    &g_muse_app,
     &g_game_app,
     &g_sound_jump_app,
     &g_tetris_app,
@@ -97,14 +96,13 @@ WifiPowerSaveLevel power_save_level_for(passport_app_id_t id) {
         case APP_ID_RADIO:
         case APP_ID_VOICE:
         case APP_ID_XIAOZHI:
-        case APP_ID_MUSE:
             return WifiPowerSaveLevel::BALANCED;
         default:
             return WifiPowerSaveLevel::LOW_POWER;
     }
 }
 
-// 收音机/小智/Muse 的 TLS、解码与音频缓冲需要大块连续内存。C3 无 PSRAM,
+// 收音机/小智 的 TLS、解码与音频缓冲需要大块连续内存。C3 无 PSRAM,
 // 这些应用退出后残留的小块(lwIP、Wi-Fi、启动器界面)会把堆切碎,再次进入时
 // 总量够而最大连续块不够,表现为连接失败或运行中崩溃。碎片无法原地整理:
 // 只有当前堆确实放不下目标应用,或上一次重型会话已出现过分配失败时,
@@ -117,12 +115,11 @@ struct HeapNeed {
     size_t free;    // 整个会话的总占用加余量
 };
 // rc.51 实测(堆追踪诊断版):收音机 MP3 解码器一次申请约 22.9 KiB,会话约占 34 KiB;
-// 小智最大单块 12 KiB(任务栈),会话约占 30 KiB;Muse 工作任务栈 12 KiB 加 TLS 8 KiB。
+// 小智最大单块 12 KiB(任务栈),会话约占 30 KiB。
 HeapNeed heap_need(passport_app_id_t id) {
     switch (id) {
         case APP_ID_RADIO: return {24 * 1024, 48 * 1024};
         case APP_ID_XIAOZHI: return {16 * 1024, 44 * 1024};
-        case APP_ID_MUSE: return {20 * 1024, 44 * 1024};
         default: return {0, 0};
     }
 }
@@ -135,7 +132,7 @@ bool s_heap_strained = false;
 bool s_fresh_heap = false;
 
 bool heavy_app(passport_app_id_t id) {
-    return id == APP_ID_RADIO || id == APP_ID_XIAOZHI || id == APP_ID_MUSE;
+    return id == APP_ID_RADIO || id == APP_ID_XIAOZHI;
 }
 
 // 在旧应用 stop() 之后调用:此时测到的才是新应用可用的堆。

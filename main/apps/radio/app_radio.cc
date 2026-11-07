@@ -41,7 +41,9 @@ bool catalog_cancelled() { return s_catalog_cancel.load() || !s_radio_active.loa
 void catalog_worker(void *arg) {
     (void)arg;
     ESP_LOGI(TAG, "Starting shared city station catalog search...");
-    constexpr std::size_t kDiscoveryCapacity = 8;
+    // Matches radio_player's kMaxStations. Leave room for both the local
+    // directory stations (4) and the compiled-in presets (Shenzhen + CNR).
+    constexpr std::size_t kDiscoveryCapacity = 14;
     // Release the live decoder/TLS working set before directory HTTP/cJSON.
     radio_player_set_playing(false);
     if (!radio_player_wait_idle(2000) || catalog_cancelled()) {

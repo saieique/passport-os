@@ -1,7 +1,6 @@
 #include "launcher/network_diagnostics.h"
 #include "launcher/app_registry.h"
 #include "wifi_manager.h"
-#include "passport_muse.h"
 #include "apps/voice/time_sync.h"
 #include "apps/home/home_weather.h"
 #include "bsp_battery.h"
@@ -23,9 +22,7 @@ void refresh() {
     const auto ssid = passport::ssid_display(wifi.GetSsid(), &buddy_font_16);
     ui_pixel_label_set_text(s_ssid, wifi.IsConnected() ? ssid.c_str() : "未连接无线网络");
     const char *internet[] = {"未连接", "正在检查", "可以上网", "需网页登录", "无法上网"};
-    char proxy[32], age[32] = "暂无天气", synced[24] = "未校时";
-    uint16_t port = 0;
-    const int route = passport_muse_proxy_route_info(proxy, sizeof(proxy), &port);
+    char age[32] = "暂无天气", synced[24] = "未校时";
     const time_t last = time_sync_last_epoch() + time_sync_tz_offset_sec();
     if (time_sync_valid()) {
         struct tm tm{}; gmtime_r(&last, &tm);
@@ -35,9 +32,8 @@ void refresh() {
     if (home_weather_get(&weather) && weather.valid) home_weather_age_text(weather.updated_at, time_sync_valid() ? time(nullptr) : 0, age, sizeof(age));
     const int tz = time_sync_tz_offset_sec() / 60;
     char text[512];
-    std::snprintf(text, sizeof(text), "RSSI %d dBm\nIP %s\n%s\nMuse %s\n%s:%u\n校时 %s\nUTC%c%02d:%02d\n天气 %s\n电量 %d%%", wifi.GetRssi(),
+    std::snprintf(text, sizeof(text), "RSSI %d dBm\nIP %s\n%s\n校时 %s\nUTC%c%02d:%02d\n天气 %s\n电量 %d%%", wifi.GetRssi(),
         wifi.IsConnected() ? wifi.GetIpAddress().c_str() : "--", internet[static_cast<int>(wifi.GetInternetStatus())],
-        route == 1 ? "电脑代理" : "直连", route ? proxy : "--", port,
         synced, tz < 0 ? '-' : '+', std::abs(tz) / 60, std::abs(tz) % 60, age, bsp_battery_soc());
     ui_pixel_label_set_text(s_info, text);
 }

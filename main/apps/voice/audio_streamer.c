@@ -52,7 +52,7 @@ static adpcm_state_t s_adpcm;                 // 仅 ble_worker 上下文访问(
 #define WORKER_EXIT_TIMEOUT_MS 200   // 等采集 worker 退出阻塞读(原 30×5ms 轮询)
 #endif
 
-// Session-owned storage: inactive Voice must not take SRAM from Xiaozhi/Muse.
+// Session-owned storage: inactive Voice must not take SRAM from Xiaozhi.
 typedef struct {
     StaticRingbuffer_t ring;
     StaticTask_t audio_tcb, send_tcb;

@@ -32,7 +32,7 @@ static std::atomic<unsigned> s_generation,s_station_count,s_station_index;
 static void *s_station_mutex,*s_player_stopped;
 static bool s_decoders_registered;
 static RadioStation *s_stations;
-static constexpr unsigned kMaxStations=10,kStreamStackBytes=7168;
+static constexpr unsigned kMaxStations=14,kStreamStackBytes=7168;
 static int s_stream_tcb,token;
 static const RadioStation kRadioPresets[1]={{"test","test","https://example.invalid",0}};
 static unsigned step,fail_at,sync_live,decoder_live,audio_live;
@@ -78,7 +78,7 @@ int main(){
  using namespace audio_workspace;
  assert(acquire(Owner::Muse));assert(!radio_player_init());assert(release(Owner::Muse));
  step=fail_at=0;assert(radio_player_init());unsigned steps=step;
- assert(s_stations==(RadioStation*)radio::stations() && sizeof(RadioStation)*kMaxStations==4180);
+ assert(s_stations==(RadioStation*)radio::stations() && sizeof(RadioStation)*kMaxStations==5852);
  assert(!strcmp(s_stations[0].name,"test"));stopped=false;
  assert(!radio_player_deinit(20) && owner==Owner::Radio && s_stations && audio_live);
  assert(!acquire(Owner::Muse) && !radio_player_init());stopped=true;
@@ -88,7 +88,7 @@ int main(){
   memset(storage,0x5a,kBytes);step=0;fail_at=f;assert(!radio_player_init());
   assert(owner==Owner::None && !s_stations && !sync_live && !decoder_live && !audio_live);
   for(unsigned i=0;i<radio::kCompressedBytes;i++)assert(aux()[i]==0x5a);
-  for(auto p=radio::stations()+4180;p<storage+kBytes;p++)assert(*p==0x5a);
+  for(auto p=radio::stations()+5852;p<storage+kBytes;p++)assert(*p==0x5a);
   step=fail_at=0;assert(radio_player_init());assert(radio_player_deinit(10));
  }
  s_radio_active=s_ui_alive=s_catalog_running=true;idle=false;

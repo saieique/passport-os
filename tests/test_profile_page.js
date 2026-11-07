@@ -5,7 +5,6 @@ const cityCatalog=JSON.parse(fs.readFileSync('main/apps/home/cities.json','utf8'
 const script=html.match(/<script>\r?\n([\s\S]*?)<\/script>/)[1];
 assert.ok(!/<(?:script|img|link)\b[^>]*(?:src|href)=["']https?:|url\(["']?https?:/i.test(html),'the captive page must not load internet resources');
 assert.match(html,/href="https:\/\/github.com\/manchunx7-bit\/folo-ai-passport-voice"/,'voice project is discoverable from phone setup');
-assert.match(html,/href="https:\/\/github.com\/manchunx7-bit\/ai-passport-muse"/,'Muse project is discoverable from phone setup');
 const elements=new Map(),requests=[],timers=new Map();let nextTimer=1;
 class Element {
  constructor(){this.value='';this.textContent='';this.style={};this.dataset={};this.options=[];this.classList={toggle(){}};this.type='password';this.files=[];}
@@ -21,7 +20,6 @@ class Image {constructor(){this.naturalWidth=240;this.naturalHeight=320}set src(
 let state='idle',saved=false,failShare=false,denyFinish=false,emptyScan=true,failScan=false;
 let connectError='';
 let avatarError='',avatarDeviceCode='ESP_FAIL';
-let museTokenSet=false,musePaired=false,museProxyHost='',museProxyPort=0,failMuseSave=false,failMuseLoad=false,museGate=null;
 let failCities=false,cityGate=null;let savedProfile={name:'测试',signature:'已有签名',address:'原地址',city:'自定义城市',lat:'22.3',lon:'113.6',avatar:true,share_image:true};let gallery=[{slot:0,bytes:12000}],blobBytes=20000,qualityAttempts=[];
 const phoneWindow={__T:314159,scrollTo(){},addEventListener(){},isSecureContext:false,crypto:require('node:crypto').webcrypto,location:{origin:'http://192.168.4.1'}};
 const phoneNavigator={};
@@ -29,7 +27,6 @@ class TestURL extends URL{static createObjectURL(){return 'blob:fixture'}static 
 const context=vm.createContext({document:{getElementById:get,createElement:()=>new Element()},window:phoneWindow,navigator:phoneNavigator,Option:class{constructor(text,value){this.text=text;this.value=value;this.dataset={}}},Image,TextEncoder,Uint8Array,Uint8ClampedArray,Blob,AbortController,URL:TestURL,URLSearchParams,setTimeout(fn,ms){const id=nextTimer++;timers.set(id,{fn,ms});return id},clearTimeout:id=>timers.delete(id),fetch:async(url,options)=>{
  requests.push({url,options});let result={},ok=true;
  if(url.startsWith('/api/cities')){if(cityGate)await cityGate;if(failCities)throw new Error('offline');result=cityCatalog;}
- if(url.startsWith('/api/muse')){if(options.method==='POST'){if(failMuseSave){ok=false;result={error:'muse_config'}}else{const data=JSON.parse(options.body);if(data.sdk_token){museTokenSet=true;musePaired=false}if('proxy_host' in data){museProxyHost=data.proxy_host;museProxyPort=data.proxy_port}result={ok:true,token_set:museTokenSet,paired:musePaired,proxy_host:museProxyHost,proxy_port:museProxyPort}}}else{if(museGate)await museGate;if(failMuseLoad)throw new Error('offline');result={token_set:museTokenSet,paired:musePaired,proxy_host:museProxyHost,proxy_port:museProxyPort}}}
  if(url.startsWith('/api/profile')&&!options.method)result=savedProfile;
  if(url.startsWith('/api/avatar')&&options.method==='POST'&&avatarError){ok=false;result={error:avatarError,code:avatarDeviceCode};}
  if(url.startsWith('/api/setup'))result={state,saved_network:saved,saved_networks:saved?['Absent Wi-Fi','Test Wi-Fi']:[],ssid:'Test Wi-Fi'};
@@ -91,82 +88,6 @@ const posts=()=>requests.filter(r=>r.options.method==='POST');
  assert.equal([...timers.entries()].some(([id,t])=>id>=beforeRejectedTimer&&t.fn===context.poll),false,'an explicit rejection must not start polling');
  connectError='';get('keepSaved').onclick();assert.equal(get('step2').hidden,false);
  assert.match(get('connectionSummary').textContent,/完成后自动重连/);
- const previousMusePosts=posts().filter(r=>r.url.startsWith('/api/muse')).length;
- get('museToken').value='';await get('saveMuse').onclick();
- get('museToken').value='wrong';await get('saveMuse').onclick();
- assert.equal(posts().filter(r=>r.url.startsWith('/api/muse')).length,previousMusePosts,'invalid SDK token is not posted');
- get('museToken').value='mgst_test_fixture_only_12345';await get('saveMuse').onclick();
- const museRequest=posts().at(-1);assert.equal(museRequest.url,'/api/muse?t=314159');
- assert.equal(JSON.parse(museRequest.options.body).sdk_token,'mgst_test_fixture_only_12345');
- assert.equal(get('museToken').value,'');assert.equal(get('saveMuse').disabled,false);
- assert.match(get('museSaved').textContent,/Token 已保存，无需重新填写/);
- assert.match(get('museToken').placeholder,/已保存/);assert.equal(get('useSavedMuse').hidden,false);
- musePaired=true;await context.loadMuse();
- let proxyPosts=posts().filter(r=>r.url.startsWith('/api/muse')).length;
- get('museProxyHost').value='127.0.0.1';get('museProxyPort').value='7897';await get('saveMuse').onclick();
- get('museProxyHost').value='192.168.1.999';await get('saveMuse').onclick();
- get('museProxyHost').value='192.168.1.20';get('museProxyPort').value='0';await get('saveMuse').onclick();
- assert.equal(posts().filter(r=>r.url.startsWith('/api/muse')).length,proxyPosts,'invalid proxy addresses and port are not posted');
- get('museProxyPort').value='7897';await get('saveMuse').onclick();
- let proxyBody=JSON.parse(posts().at(-1).options.body);assert.deepEqual(proxyBody,{proxy_host:'192.168.1.20',proxy_port:7897});
- assert.equal(get('museProxyHost').value,'192.168.1.20');assert.equal(get('museState').textContent,'已配对');
- assert.match(get('museStatus').textContent,/重试连接/);
- // Reopening the page recovers the stored configuration without exposing a token.
- let savedWrites=posts().length;
- vm.runInContext('museConfigured=false;museLoaded=false;museProxyEdited=false',context);
- get('museProxyHost').value='';get('museProxyPort').value='';await context.loadMuse();
- assert.equal(get('museProxyHost').value,'192.168.1.20');assert.equal(get('museProxyPort').value,7897);
- assert.equal(get('museToken').value,'');assert.match(get('museSaved').textContent,/192\.168\.1\.20:7897/);
- assert.equal(posts().length,savedWrites,'loading saved configuration does not rewrite credentials or pairing');
- get('museToken').value='mgst_unsaved_fixture_only';get('museProxyPort').value='8080';get('museProxyPort').oninput();
- await get('useSavedMuse').onclick();
- assert.equal(get('museToken').value,'');assert.equal(get('museProxyPort').value,7897);
- assert.equal(posts().length,savedWrites,'reuse only restores saved values');
- // A late response must not replace a proxy the user has already edited.
- let releaseMuse;museGate=new Promise(resolve=>{releaseMuse=resolve});
- const pendingMuse=context.loadMuse();get('museProxyPort').value='8080';get('museProxyPort').oninput();
- assert.equal(get('saveMuse').disabled,true);assert.equal(context.loadMuse(),pendingMuse,'concurrent loads share one request');
- releaseMuse();await pendingMuse;museGate=null;
- assert.equal(get('museProxyPort').value,'8080','late reads preserve unsaved edits');
- await get('useSavedMuse').onclick();
- failMuseLoad=true;await context.loadMuse();
- assert.match(get('museSaved').textContent,/Token 已保存/);assert.equal(get('museProxyPort').value,7897);
- assert.equal(get('retryMuse').hidden,false);assert.equal(posts().length,savedWrites,'read failure never clears configuration');
- // A cold failed read cannot turn blank fields into a request to clear a saved proxy.
- vm.runInContext('museConfigured=false;museLoaded=false;museProxyEdited=false',context);
- get('museProxyHost').value='';get('museProxyPort').value='';await context.loadMuse();await get('saveMuse').onclick();
- assert.equal(posts().length,savedWrites);assert.match(get('museStatus').textContent,/重新读取/);
- failMuseLoad=false;await get('retryMuse').onclick();
- assert.equal(get('museProxyHost').value,'192.168.1.20');assert.equal(get('museProxyPort').value,7897);
- assert.equal(get('retryMuse').hidden,true);
- // A successful POST supplies persisted state, without needing another fragile GET.
- get('museProxyPort').value='8080';failMuseLoad=true;
- const readsBeforeSave=requests.filter(r=>r.url.startsWith('/api/muse')&&!r.options.method).length;
- await get('saveMuse').onclick();
- assert.match(get('museSaved').textContent,/192\.168\.1\.20:8080/);assert.match(get('museStatus').textContent,/已保存/);
- assert.equal(requests.filter(r=>r.url.startsWith('/api/muse')&&!r.options.method).length,readsBeforeSave);
- failMuseLoad=false;
- get('museProxyHost').value='';await get('saveMuse').onclick();
- assert.deepEqual(JSON.parse(posts().at(-1).options.body),{proxy_host:'',proxy_port:0});
- assert.equal(musePaired,true,'proxy-only update does not replace account authorization');
- get('museProxyHost').value='';await get('saveMuse').onclick();
- // Primary completion saves valid pending Muse inputs, and never closes the
- // setup AP when those inputs are invalid or cannot be persisted.
- museTokenSet=false;musePaired=false;await context.loadMuse();
- let finishes=posts().filter(r=>r.url.startsWith('/api/finish')).length;
- get('museToken').value='wrong';await get('save').onclick();
- assert.equal(posts().filter(r=>r.url.startsWith('/api/finish')).length,finishes);
- assert.match(get('saveStatus').textContent,/SDK Token/);
- get('museToken').value='mgst_test_fixture_only_67890';failMuseSave=true;await get('save').onclick();
- assert.equal(posts().filter(r=>r.url.startsWith('/api/finish')).length,finishes,'failed Muse save keeps setup AP open');
- assert.equal(get('museToken').value,'mgst_test_fixture_only_67890','failed save preserves input');
- failMuseSave=false;let firstRequest=requests.length;await get('save').onclick();
- const completed=requests.slice(firstRequest).filter(r=>r.options.method==='POST').map(r=>r.url);
- assert.ok(completed.indexOf('/api/muse?t=314159')<completed.indexOf('/api/finish?t=314159'));
- assert.equal(get('museToken').value,'');assert.equal(get('step3').hidden,false);
- proxyPosts=posts().filter(r=>r.url.startsWith('/api/muse')).length;
- await get('save').onclick();
- assert.equal(posts().filter(r=>r.url.startsWith('/api/muse')).length,proxyPosts,'unchanged optional Muse configuration is not rewritten');
  // Both document-picker fallbacks use the same preview and binary save paths.
  get('fileFallback').files=[{size:1000}];await get('fileFallback').onchange();
  assert.equal(get('photoTools').hidden,false);assert.match(get('avatarStatus').textContent,/已选择/);
@@ -346,5 +267,5 @@ assert.ok(html.indexOf('id="shareStatus"')<html.indexOf('id="cardList"'),'picker
 console.log('Image feedback: filename preservation, distinct decode/encode stages, encoding timeout/retry/late callback, MIME/null/exception recovery: PASS');
 console.log('Multiselect: unfiltered multiple file input, multiple photo alternative, separate single replacement, cancelled replacement isolation and non-image rejection: PASS');
  console.log('Card gallery: six-image limit, sequential compression, released original bitmaps, quality ladder, reject oversized, stable slots, reorder/delete and partial-save retry: PASS');
- console.log('Phone setup: Wi-Fi/images/Muse, nationwide cities, phone GPS/raw coordinates, permission/timeout/manual override, HTTPS popup authentication and copy fallback: PASS');
+ console.log('Phone setup: Wi-Fi/images, nationwide cities, phone GPS/raw coordinates, permission/timeout/manual override, HTTPS popup authentication and copy fallback: PASS');
 })().catch(e=>{console.error(e);process.exitCode=1});

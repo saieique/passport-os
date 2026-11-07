@@ -41,7 +41,7 @@ static_assert(kStreamStackBytes + kInputSize + kOutputSize + kReaderStackBytes <
 StaticTask_t s_stream_tcb;
 StaticTask_t s_reader_tcb;
 constexpr std::size_t kLevelCount = 18;
-constexpr std::size_t kMaxStations = 10;
+constexpr std::size_t kMaxStations = 14;
 // Consecutive silent failures tolerated before moving to the next station.
 constexpr uint8_t kMaxFailedAttempts = 3;
 // Two dead stations in a row is a network problem (hotspot without data,

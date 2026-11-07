@@ -97,19 +97,19 @@ int main(int argc,char **argv) {
 
     reset();ip_city="Jiangmen";city_fixture="["+station("江门电台","http://jm/live")+"]";
     n=radio_catalog_discover(stations,8,&location,cancel);
-    assert(n==7&&ip_requests==1&&!std::strcmp(location.city,"江门"));
+    assert(n==8&&ip_requests==1&&!std::strcmp(location.city,"江门"));
     assert(queries[0].find("name=江门")!=std::string::npos);
 
     reset();fail_dns=true;fail_first=true;city_fixture="["+station("恢复","http://ok/live")+"]";
     n=radio_catalog_discover_location(preferred,stations,8,&location,cancel);
-    assert(n==7&&queries[0].find("de1.")!=std::string::npos&&queries[1].find("fi1.")!=std::string::npos);
+    assert(n==8&&queries[0].find("de1.")!=std::string::npos&&queries[1].find("fi1.")!=std::string::npos);
 
     reset();fake_dns=true;city_fixture="["+station("代理网络","http://proxy/live")+"]";
     n=radio_catalog_discover_location(preferred,stations,8,&location,cancel);
-    assert(n==7&&queries[0].find("de1.")!=std::string::npos);
+    assert(n==8&&queries[0].find("de1.")!=std::string::npos);
 
     reset();fail_all=true;
-    n=radio_catalog_discover_location(preferred,stations,8,&location,cancel);assert(n==6);unique(stations,n);
+    n=radio_catalog_discover_location(preferred,stations,8,&location,cancel);assert(n==8);unique(stations,n);
     reset();stop_on_read=true;city_fixture="["+station("取消","http://cancel/live")+"]";
     assert(radio_catalog_discover_location(preferred,stations,8,&location,cancel)==0&&live_http==0);
     auto old_queries=queries.size();assert(radio_catalog_discover_location(preferred,stations,8,&location,cancel)==0&&queries.size()==old_queries);
@@ -122,7 +122,7 @@ int main(int argc,char **argv) {
         station("长URL",std::string("http://url/")+std::string(300,'X'))+","+
         station("有效无后缀","http://valid/live")+"]";
     n=radio_catalog_discover_location(preferred,stations,8,&location,cancel);
-    assert(n==7&&!std::strcmp(stations[0].name,"有效无后缀")&&live_http==0);
+    assert(n==8&&!std::strcmp(stations[0].name,"有效无后缀")&&live_http==0);
 
     char object[32];RadioJsonStream parser(object,sizeof(object));std::vector<std::string> objects;
     std::string body="[{\"a\":\"}\\\"{\",\"b\":{}},{\"large\":\""+std::string(100,'x')+"\"},{\"last\":1}]";

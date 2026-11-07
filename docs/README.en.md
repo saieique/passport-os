@@ -4,15 +4,15 @@
 
 **A small device worth keeping in your daily routine.**
 
-Community firmware for the FoloToy AI Passport, based on ESP32-C3 with 8 MB Flash. It brings ten apps together with shared settings, Wi-Fi setup, themes, audio, battery reporting, and power management.
+Community firmware for the FoloToy AI Passport, based on ESP32-C3 with 8 MB Flash. It brings nine apps together with shared settings, Wi-Fi setup, themes, audio, battery reporting, and power management.
 
 ## Why this project exists
 
-Thank you to everyone who has enjoyed the project and shared feedback. I started Passport OS to make a small device I would use regularly, then selected ten functions and apps through repeated experiments.
+Thank you to everyone who has enjoyed the project and shared feedback. I started Passport OS to make a small device I would use regularly, then selected nine functions and apps through repeated experiments.
 
 People have suggested many personal improvements. Because everyone uses the hardware differently, sharing the source lets you add what you need, remove what you do not, and make a version that fits you. Have fun using and modifying it.
 
-## Ten apps
+## Nine apps
 
 | App | What it does | Requirements |
 | --- | --- | --- |
@@ -20,7 +20,6 @@ People have suggested many personal improvements. Because everyone uses the hard
 | Radio | City and station selection, playback, and sleep timer | Wi-Fi and available online stations |
 | AI Voice | Hardware microphone and configurable desktop hotkeys | Windows companion program |
 | Xiaozhi AI | Spoken conversations through the microphone and speaker | Network and Xiaozhi service configuration |
-| Muse | Send voice messages and read replies on screen | Phone pairing, your own account, and a working network |
 | Why Barking | A sound-controlled game | Works offline |
 | Sound Jump | Longer sounds jump farther; release your voice to jump | Works offline |
 | Tetris | Stack blocks and clear lines | Works offline |
@@ -29,7 +28,6 @@ People have suggested many personal improvements. Because everyone uses the hard
 
 ## Related projects
 
-- [Muse: ai-passport-muse](https://github.com/manchunx7-bit/ai-passport-muse): standalone module source and usage guide.
 - [AI Voice: folo-ai-passport-voice](https://github.com/manchunx7-bit/folo-ai-passport-voice): voice application source, Windows companion, and usage guide.
 
 ## Install
@@ -45,7 +43,7 @@ Use only the matching FoloToy AI Passport hardware revision with ESP32-C3 and 8 
 
 **Back up first.** A full image overwrites configuration in its written range. A complete reset also requires erasing flash. To preserve settings and images, verify the partition layout and use the application image without erasing the whole flash.
 
-On first boot, connect your phone to the device's password-free `Passport-WiFi-xxxx` hotspot and open `http://192.168.4.1`. Follow the setup page to select Wi-Fi, city, and personal details. Xiaozhi and Muse need your own service configuration; AI Voice also needs its Windows companion.
+On first boot, connect your phone to the device's password-free `Passport-WiFi-xxxx` hotspot and open `http://192.168.4.1`. Follow the setup page to select Wi-Fi, city, and personal details. Xiaozhi needs your own service configuration; AI Voice also needs its Windows companion.
 
 ## Make your own version
 
@@ -58,7 +56,6 @@ Download the source, modify the apps or interface, build a firmware image, and t
 | Shared UI and fonts | [`main/ui/`](../main/ui/), [`main/fonts/`](../main/fonts/) |
 | Board drivers | [`components/bsp/`](../components/bsp/) |
 | Wi-Fi setup | [`components/esp-wifi-connect/`](../components/esp-wifi-connect/) |
-| Muse integration | [`components/passport_muse/`](../components/passport_muse/) |
 | Tests and development tools | [`tests/`](../tests/), [`tools/`](../tools/) |
 
 ### Build
@@ -107,6 +104,6 @@ Replace the date and verification path with actual values. Use public-safe verif
 
 Public builds enable `PASSPORT_PUBLIC_RELEASE=ON` and clear proxy defaults. Users supply their own Wi-Fi, accounts, and service credentials. Do not commit credentials, device exports, private logs, or personal images.
 
-The main project uses the [MIT license](../LICENSE). Muse, Noise, and other third-party content retain their own licenses and notices. Jollybot artwork has [separate terms](../main/apps/muse/JOLLYBOT-NOTICE.md).
+The main project uses the [MIT license](../LICENSE). Noise and other third-party content retain their own licenses and notices.
 
 Thanks to FoloToy, the upstream projects, and everyone who shares ideas, reports issues, and contributes improvements.

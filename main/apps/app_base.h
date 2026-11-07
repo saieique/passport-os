@@ -21,7 +21,7 @@ typedef enum {
     APP_ID_TETRIS,
     APP_ID_STOPWATCH,
     APP_ID_SOUND_JUMP,
-    APP_ID_MUSE,
+    APP_ID_MUSE,          // 已移除应用的占位 ID,勿复用:NVS/clean-launch 按数值寻址
     APP_ID_POMODORO,
     APP_ID_COUNT
 } passport_app_id_t;

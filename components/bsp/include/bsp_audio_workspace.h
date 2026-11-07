@@ -31,7 +31,11 @@ static_assert(kReceiveBytes + kTransmitBytes <= kRealtimeBytes);
 static_assert(kReceiveBytes + 2 * kSendScratchBytes + kQueueSlots * kQueueSlotBytes <= kAuxBytes);
 }
 namespace radio {
-constexpr std::size_t kCompressedBytes = 16 * 1024;
+// 2 KiB of the compressed FIFO is reassigned to the station table so the
+// catalog can hold 14 stations (Shenzhen + CNR presets plus local directory).
+// Total static SRAM is unchanged, so verify_firmware.py's 72 KiB first-heap
+// budget is untouched. 14 KiB still buffers ~1.8 s of a 64 kbps stream.
+constexpr std::size_t kCompressedBytes = 14 * 1024;
 inline std::uint8_t *stations() { return aux() + kCompressedBytes; }
 constexpr std::size_t kStationBytes = kAuxBytes - kCompressedBytes;
 }

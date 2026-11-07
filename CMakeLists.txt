@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.16)
 set(PROJECT_VER "0.2.0-rc.56")
 option(PASSPORT_RADIO_HLS_TEST "Use curated HLS/global radio test stations" OFF)
 option(PASSPORT_PUBLIC_RELEASE "Build with distribution-safe defaults and no personal configuration" OFF)
-option(PASSPORT_MUSE_USE_JOLLYBOT "Build Muse with the official Jollybot artwork" ON)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 # LVGL's default assert handler is `while(1);`, which freezes the screen with

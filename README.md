@@ -24,7 +24,7 @@ FoloToy AI Passport 社区固件 · ESP32-C3 · 8 MB Flash · 10 款功能与应
 
 > 希望它既能成为你日常用得上的工具，也能成为值得折腾的小玩具。大家玩得开心！
 
-## 十款应用，装进口袋
+## 九款应用，装进口袋
 
 | 应用 | 可以做什么 | 使用条件 |
 | --- | --- | --- |
@@ -32,7 +32,6 @@ FoloToy AI Passport 社区固件 · ESP32-C3 · 8 MB Flash · 10 款功能与应
 | 收音机 | 选择城市和电台，听广播，设置睡眠计时 | Wi-Fi 与可用的网络电台 |
 | AI 随身语音 | 把设备当成电脑的语音输入工具，联动快捷键 | Windows 配套程序 |
 | 小智 AI | 通过麦克风和扬声器进行语音对话 | 网络与小智服务配置 |
-| Muse | 语音发送给 Muse，在屏幕上阅读回复 | 手机配对、自己的账号与可用网络 |
 | 你在狗叫什么 | 用声音参与一局小游戏 | 可离线使用 |
 | 声音跳一跳 | 长声跳远、短声跳近，停声就跳 | 可离线使用 |
 | 俄罗斯方块 | 熟悉的堆叠、消行，再来一局 | 可离线使用 |
@@ -41,13 +40,12 @@ FoloToy AI Passport 社区固件 · ESP32-C3 · 8 MB Flash · 10 款功能与应
 
 应用之外，还包含主题、音量、亮度、自动熄屏、短按唤醒、Wi-Fi 配网、电池显示与功耗管理等整机功能。
 
-## 两个老朋友
+## 一位老朋友
 
-此前单独开源的 Muse 和 AI 随身语音，也有各自的源码、教程和配套内容：
+此前单独开源的 AI 随身语音，也有自己的源码、教程和配套内容：
 
 | 项目 | 地址 | 内容 |
 | --- | --- | --- |
-| Muse | [ai-passport-muse](https://github.com/manchunx7-bit/ai-passport-muse) | Muse 应用模块源码与使用教程 |
 | AI 随身语音 | [folo-ai-passport-voice](https://github.com/manchunx7-bit/folo-ai-passport-voice) | 随身语音源码、Windows 电脑端程序与使用教程 |
 
 ## 先用起来
@@ -73,7 +71,7 @@ FoloToy AI Passport 社区固件 · ESP32-C3 · 8 MB Flash · 10 款功能与应
 3. 按页面提示选择 Wi-Fi、设置城市和个人资料；头像与名片按需添加。
 4. 完成设置后返回首页，开始使用。
 
-小智和 Muse 需要使用者自己的服务配置；Muse 使用代理时，填写代理主机的局域网 IP 和 HTTP 端口。AI 随身语音还需要运行上方关联项目中的 Windows 程序。
+小智需要使用者自己的服务配置；AI 随身语音还需要运行上方关联项目中的 Windows 程序。
 
 </details>
 
@@ -92,7 +90,6 @@ FoloToy AI Passport 社区固件 · ESP32-C3 · 8 MB Flash · 10 款功能与应
 | 通用界面与字体资源 | [`main/ui/`](main/ui/) · [`main/fonts/`](main/fonts/) |
 | 按键、显示、音频、电池等板级驱动 | [`components/bsp/`](components/bsp/) |
 | Wi-Fi 配网与连接管理 | [`components/esp-wifi-connect/`](components/esp-wifi-connect/) |
-| Muse 接入与协议适配 | [`components/passport_muse/`](components/passport_muse/) |
 | 主机测试与构建工具 | [`tests/`](tests/) · [`tools/`](tools/) |
 
 ### 编译第一版
@@ -150,7 +147,7 @@ python3 tools/package_firmware.py --date YYYY-MM-DD --verification /path/to/veri
 
 ## 许可与致谢
 
-项目主体采用 [MIT 许可证](LICENSE)。Muse、Noise 协议和其他第三方内容遵循各自目录中的 `LICENSE`、`NOTICE` 及资源说明；Jollybot 形象的使用边界见 [单独声明](main/apps/muse/JOLLYBOT-NOTICE.md)。
+项目主体采用 [MIT 许可证](LICENSE)。Noise 协议和其他第三方内容遵循各自目录中的 `LICENSE`、`NOTICE` 及资源说明。
 
 感谢 FoloToy 的硬件与上游项目，也感谢所有分享想法、反馈问题和参与改进的朋友。
 
