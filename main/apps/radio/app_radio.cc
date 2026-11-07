@@ -1,6 +1,7 @@
 #include "apps/radio/app_radio.h"
 #include "apps/radio/radio_ui.h"
 #include "apps/radio/radio_player.h"
+#include "apps/radio/radio_presets.h"
 #include "apps/radio/radio_catalog.h"
 #include "apps/home/home_profile.h"
 #include "freertos/FreeRTOS.h"
@@ -40,53 +41,37 @@ bool catalog_cancelled() { return s_catalog_cancel.load() || !s_radio_active.loa
 
 void catalog_worker(void *arg) {
     (void)arg;
-    ESP_LOGI(TAG, "Starting shared city station catalog search...");
-    constexpr std::size_t kDiscoveryCapacity = 8;
-    // Release the live decoder/TLS working set before directory HTTP/cJSON.
+    ESP_LOGI(TAG, "Installing built-in station presets...");
+    // Release the live decoder/TLS working set before swapping the catalog.
     radio_player_set_playing(false);
     if (!radio_player_wait_idle(2000) || catalog_cancelled()) {
         // A timed-out decoder/TLS worker still owns its memory. Do not overlap
-        // it with another HTTP connection, and leave normal playback retryable.
+        // it with another catalog swap, and leave normal playback retryable.
         xSemaphoreTake(s_catalog_commit, portMAX_DELAY);
         if (!catalog_cancelled()) radio_player_set_playing(true);
         s_catalog_running.store(false);
         xSemaphoreGive(s_catalog_commit);
-        ESP_LOGW(TAG, "Catalog deferred: player has not released stream resources");
+        ESP_LOGW(TAG, "Preset install deferred: player has not released stream resources");
         vTaskDelete(nullptr);
         return;
     }
-    auto *stations = static_cast<RadioStation *>(
-        std::calloc(kDiscoveryCapacity, sizeof(RadioStation)));
-    if (!stations) {
-        xSemaphoreTake(s_catalog_commit, portMAX_DELAY);
-        if (!catalog_cancelled()) radio_player_set_playing(true);
-        s_catalog_running.store(false);
-        xSemaphoreGive(s_catalog_commit);
-        ESP_LOGE(TAG, "Unable to allocate station catalog");
-        vTaskDelete(nullptr);
-        return;
-    }
-    home_profile_t profile;
-    home_profile_get(&profile);
-    RadioLocation preferred = {}, loc = {};
-    std::snprintf(preferred.city, sizeof(preferred.city), "%s", profile.city);
-    std::snprintf(preferred.region, sizeof(preferred.region), "%s", profile.region);
-    std::snprintf(preferred.search_city, sizeof(preferred.search_city), "%s", profile.radio_city);
-    std::snprintf(preferred.country_code, sizeof(preferred.country_code), "%s", profile.country_code);
-    std::size_t found = radio_catalog_discover_location(preferred, stations, kDiscoveryCapacity,
-                                                       &loc, catalog_cancelled);
+    // Fixed presets: no directory HTTP, no cJSON buffer and no station-table
+    // calloc. Startup therefore never depends on the network, and the shared
+    // audio workspace keeps its stock layout.
+    constexpr std::size_t kPresetCount =
+        sizeof(kRadioPresets) / sizeof(kRadioPresets[0]);
+    static_assert(kPresetCount <= 10, "preset list exceeds the station table");
     // Serialize installation/start with stop; no late playback in the next app.
     xSemaphoreTake(s_catalog_commit, portMAX_DELAY);
     const bool alive = !catalog_cancelled() && s_ui_alive.load();
-    if (alive && found > 0) {
-        ESP_LOGI(TAG, "Location detected: %s (%s), found %u stations", loc.city, loc.region, (unsigned)found);
-        radio_ui_set_location(loc.city);
-        radio_player_replace_stations_resuming(stations, found);
+    if (alive) {
+        ESP_LOGI(TAG, "Installed %u preset stations", (unsigned)kPresetCount);
+        radio_ui_set_location("推荐电台");
+        radio_player_replace_stations_resuming(kRadioPresets, kPresetCount);
         s_catalog_installed.store(true);
     }
-    std::free(stations);
     if (alive) {
-        // Start the MP3 decoder only after directory HTTP/cJSON is released.
+        // Start the decoder only after the catalog swap is committed.
         radio_player_set_playing(true);
     }
     xSemaphoreGive(s_catalog_commit);
