@@ -11,8 +11,11 @@ idf_component_register(
     PRIV_REQUIRES bt esp_wifi esp_timer esp-tls esp_http_client mbedtls
                   noise_core esp_app_format esp_driver_gpio efuse)
 target_compile_features(${COMPONENT_LIB} PRIVATE cxx_std_17)
-target_link_libraries(${COMPONENT_LIB} INTERFACE
-    "-Wl,--wrap=esp_mbedtls_mem_calloc" "-Wl,--wrap=esp_mbedtls_mem_free")
+# sdk/muse_tls_memory.cpp provided __wrap_esp_mbedtls_mem_calloc/free for the
+# Muse TLS RX pool. With the Muse app removed nothing references
+# muse_tls_reserve_rx(), so --gc-sections keeps that archive member out of the
+# ELF and the --wrap flags would leave those symbols undefined at link time.
+# Use the IDF default allocator; CONFIG_MBEDTLS_DYNAMIC_BUFFER still applies.
 
 # Every distributed build starts without a maintainer's network configuration.
 # A local device build may opt into a LAN proxy without committing that
