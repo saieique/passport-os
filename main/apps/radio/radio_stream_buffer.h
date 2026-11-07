@@ -10,11 +10,16 @@
 namespace radio_stream {
 // Single producer (HTTP) / single consumer (decoder). Positions are monotonically
 // increasing unsigned counters; subtraction remains valid across wraparound.
-// Storage is owned by the session and outlives both workers.
+// Storage is owned by the session and outlives both workers. Capacities need
+// not be powers of two: wrapping is done with `% capacity_`.
 class Buffer {
 public:
     Buffer(uint8_t *storage, std::size_t capacity) : data_(storage), capacity_(capacity) {
-        assert(storage && capacity && !(capacity & (capacity - 1)));
+        // Wrapping uses `% capacity_`, not a bitmask, so any positive capacity
+        // is safe. The shared audio workspace deliberately splits its 26 KiB
+        // aux area into a 14 KiB FIFO and a 12 KiB station table; 14 KiB is not
+        // a power of two and must not trip this check.
+        assert(storage && capacity);
     }
     std::size_t available() const {
         return write_.load(std::memory_order_acquire) - read_.load(std::memory_order_acquire);
