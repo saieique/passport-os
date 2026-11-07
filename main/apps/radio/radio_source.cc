@@ -38,16 +38,7 @@ esp_err_t RadioSource::event(esp_http_client_event_t *event) {
     }
     return ESP_OK;
 }
-bool RadioSource::request(const char *url) {
-    close_http();
-    if (cancelled() || (!radio_hls::starts(url, "http://") && !radio_hls::starts(url, "https://"))) return false;
-    esp_http_client_config_t cfg{};
-    cfg.url = url; cfg.timeout_ms = 6000; /* phone hotspot / 4G first byte */ cfg.buffer_size = 1024; cfg.buffer_size_tx = 512;
-    cfg.user_agent = "AI-Passport-Radio/0.2.0-rc.54";
-    cfg.crt_bundle_attach = esp_crt_bundle_attach;
-    cfg.event_handler = event; cfg.user_data = this; cfg.keep_alive_enable = true;
-    client_ = esp_http_client_init(&cfg);
-    if (!client_) { oom_ = true; return false; }
+bool RadioSource::send() {
     esp_http_client_set_header(client_, "Accept-Encoding", "identity");
     esp_http_client_set_header(client_, "Icy-MetaData", "0");
     for (unsigned redirects = 0; redirects <= 4 && !cancelled(); ++redirects) {
@@ -62,6 +53,33 @@ bool RadioSource::request(const char *url) {
         esp_http_client_close(client_);
     }
     return false;
+}
+bool RadioSource::request(const char *url) {
+    if (cancelled() || (!radio_hls::starts(url, "http://") && !radio_hls::starts(url, "https://"))) return false;
+    // Keep the client (and therefore its TCP socket) between HLS segments.
+    // Building a fresh client per segment paid a DNS lookup plus a TCP
+    // handshake at every ten-second boundary; on a phone hotspot that costs
+    // more than the 16 KiB audio FIFO holds (~0.6 s of 200 kbps audio), which
+    // is why the CNR HLS stations stuttered while MP3 ones were fine.
+    // esp_http_client_connect() only dials while its state is below
+    // HTTP_STATE_CONNECTED, so the next GET rides the socket the server already
+    // keeps alive; esp_http_client_set_url() closes that socket itself when the
+    // host or port changes, so cross-origin redirects stay correct.
+    if (client_ && esp_http_client_is_complete_data_received(client_)) {
+        if (esp_http_client_set_url(client_, url) == ESP_OK && send()) return true;
+        ESP_LOGW(kTag, "Keep-alive reuse failed; reconnecting");
+        close_http();
+    } else {
+        close_http();
+    }
+    esp_http_client_config_t cfg{};
+    cfg.url = url; cfg.timeout_ms = 6000; /* phone hotspot / 4G first byte */ cfg.buffer_size = 1024; cfg.buffer_size_tx = 512;
+    cfg.user_agent = "AI-Passport-Radio/0.2.0-rc.54";
+    cfg.crt_bundle_attach = esp_crt_bundle_attach;
+    cfg.event_handler = event; cfg.user_data = this; cfg.keep_alive_enable = true;
+    client_ = esp_http_client_init(&cfg);
+    if (!client_) { oom_ = true; return false; }
+    return send();
 }
 bool RadioSource::playlist(bool initial, bool already_open) {
     for (unsigned depth = 0; depth < 3 && !cancelled(); ++depth) {
@@ -107,10 +125,14 @@ bool RadioSource::next_segment() {
     while (!cancelled()) {
         if (hls_->index < hls_->list.count) {
             const auto &segment = hls_->list.segments[hls_->index++];
-            // A discontinuity needs a fresh demux/decoder, never concatenate
-            // unrelated timestamp/configuration epochs into a live decoder.
+            // A sliding live window can drop the segment we expected while the
+            // previous one was still playing. Aborting here tore the whole
+            // session down and made the player re-tune, which the listener
+            // hears as the station dropping out. The TS demuxer re-locks on the
+            // next segment's PAT/PMT, so continue from what the window offers.
             if (hls_->next && (segment.discontinuity || segment.sequence != hls_->next)) {
-                ESP_LOGW(kTag, "HLS discontinuity/window gap: reconnecting decoder"); return false;
+                ESP_LOGW(kTag, "HLS window moved (%llu -> %llu): resyncing",
+                         (unsigned long long)hls_->next, (unsigned long long)segment.sequence);
             }
             if (!request(segment.url)) return false;
             hls_->next = segment.sequence + 1;

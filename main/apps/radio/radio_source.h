@@ -35,6 +35,7 @@ private:
     bool cancelled() const { return cancelled_(context_); }
     static esp_err_t event(esp_http_client_event_t *event);
     bool request(const char *url);
+    bool send();
     void close_http();
     bool playlist(bool initial, bool already_open = false);
     bool next_segment();
